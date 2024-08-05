@@ -1,4 +1,5 @@
 from common import client, models
+import time
 class Chatbot:
 
     def __init__(self, modelName, system_role, instruction):
@@ -16,6 +17,7 @@ class Chatbot:
 
     def _send_request(self):
         print("context:", self.context)
+        start_time = time.time()
         try:
             response = client.chat.completions.create(
                 model=self.modelName, 
@@ -28,6 +30,8 @@ class Chatbot:
             ).model_dump()
         except Exception as e:
             print(f"Exception 오류({type(e)}) 발생:{e}")
+        end_time = time.time()
+        print("Elapsed time:", end_time - start_time)
         self.current_prompt_tokens = response['usage']['prompt_tokens']
         self.current_response_tokens = response['usage']['completion_tokens']
         self.total_prompt_tokens += self.current_prompt_tokens
@@ -58,9 +62,9 @@ class Chatbot:
     
     def check_token_usage(self):
         print("---")
-        print("prompt_tokens:", self.prompt_tokens)
-        print("response_tokens:", self.response_tokens)
-        print("total_temp_tokens:", self.prompt_tokens + self.response_tokens)
+        print("prompt_tokens:", self.current_prompt_tokens)
+        print("response_tokens:", self.current_response_tokens)
+        print("total_temp_tokens:", self.current_prompt_tokens + self.current_response_tokens)
         print("---")
         print("total_prompt_tokens:", self.total_prompt_tokens)
         print("total_response_tokens:", self.total_response_tokens)

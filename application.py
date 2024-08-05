@@ -5,6 +5,7 @@ from common import models
 
 jjinchin = Chatbot(
     modelName=models.basic,
+    # modelName=models.advanced,
     system_role=system_role,
     instruction=instruction
 )
