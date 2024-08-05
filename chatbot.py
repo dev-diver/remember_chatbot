@@ -5,7 +5,12 @@ class Chatbot:
         self.context = [{"role": "system", "content": system_role}]
         self.modelName = modelName
         self.instruction = instruction
-
+        
+        self.current_prompt_tokens = 0
+        self.current_response_tokens = 0
+        self.total_prompt_tokens = 0
+        self.total_response_tokens = 0
+    
     def add_user_message(self, message):
         self.context.append({"role": "user", "content": message})
 
@@ -23,6 +28,12 @@ class Chatbot:
             ).model_dump()
         except Exception as e:
             print(f"Exception 오류({type(e)}) 발생:{e}")
+        self.current_prompt_tokens = response['usage']['prompt_tokens']
+        self.current_response_tokens = response['usage']['completion_tokens']
+        self.total_prompt_tokens += self.current_prompt_tokens
+        self.total_response_tokens += self.current_response_tokens
+        
+        self.check_token_usage()
         return response
     
     def send_request(self):
@@ -44,6 +55,18 @@ class Chatbot:
             if self.context[idx]['role'] == "user":
                 self.context[idx]["content"] = self.context[idx]["content"].split("instruction:\n")[0].strip()
                 break
+    
+    def check_token_usage(self):
+        print("---")
+        print("prompt_tokens:", self.prompt_tokens)
+        print("response_tokens:", self.response_tokens)
+        print("total_temp_tokens:", self.prompt_tokens + self.response_tokens)
+        print("---")
+        print("total_prompt_tokens:", self.total_prompt_tokens)
+        print("total_response_tokens:", self.total_response_tokens)
+        print("total_token_usage:", self.total_prompt_tokens + self.total_response_tokens)
+        print("---")
+        
 
 if __name__ == "__main__":
     chatbot = Chatbot(models.basic)
