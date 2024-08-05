@@ -53,11 +53,7 @@ class Chatbot:
                 return makeup_response("[내 찐친 챗봇에 문제가 발생했습니다. 잠시 뒤 이용해주세요.]")
         end_time = time.time()
         print("Elapsed time:", end_time - start_time)
-        self.current_prompt_tokens = response['usage']['prompt_tokens']
-        self.current_response_tokens = response['usage']['completion_tokens']
-        self.total_prompt_tokens += self.current_prompt_tokens
-        self.total_response_tokens += self.current_response_tokens
-        
+        self.accumulate_token_usage(response)
         self.check_token_usage()
         return response
     
@@ -80,6 +76,12 @@ class Chatbot:
             if self.context[idx]['role'] == "user":
                 self.context[idx]["content"] = self.context[idx]["content"].split("instruction:\n")[0].strip()
                 break
+
+    def accumulate_token_usage(self, response):
+        self.current_prompt_tokens = response['usage']['prompt_tokens']
+        self.current_response_tokens = response['usage']['completion_tokens']
+        self.total_prompt_tokens += self.current_prompt_tokens
+        self.total_response_tokens += self.current_response_tokens
     
     def check_token_usage(self):
         print("---")

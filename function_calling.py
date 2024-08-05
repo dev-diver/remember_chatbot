@@ -7,12 +7,13 @@ import os
 
 class FunctionCalling:
 
-    def __init__(self,modelName):
+    def __init__(self,modelName, chatbot):
         self.available_functions = {
             "get_celsius_temperature": get_celsius_temperature,
             "get_currency": get_currency
         }
         self.modelName = modelName
+        self.chatbot = chatbot
 
     def analyze(self, user_message, func_specs):
         try:
@@ -25,6 +26,8 @@ class FunctionCalling:
             message = response.choices[0].message
             message_dict = message.model_dump()
             pprint(("message_dict=>", message_dict))
+            self.chatbot.accumulate_token_usage(response.model_dump())
+            self.chatbot.check_token_usage()
             return message_dict
         except Exception as e:
             print(f"Error occured(analyze):", e)
@@ -41,7 +44,11 @@ class FunctionCalling:
                 "name": func_name,
                 "content": str(func_response),
             })
-            return client.chat.completions.create(model=self.modelName,messages=context).model_dump()
+            print("context:", context)
+            response = client.chat.completions.create(model=self.modelName,messages=context).model_dump()
+            self.chatbot.accumulate_token_usage(response)
+            self.chatbot.check_token_usage()
+            return response
         except Exception as e:
             print(f"Error occured(run):", e)
             return makeup_response("[run 오류입니다]")

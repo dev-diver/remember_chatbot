@@ -11,7 +11,7 @@ jjinchin = Chatbot(
     instruction=instruction
 )
 
-func_calling = FunctionCalling(models.basic)
+func_calling = FunctionCalling(models.basic, jjinchin)
 
 application = Flask(__name__)
 
