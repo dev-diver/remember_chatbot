@@ -33,22 +33,19 @@ class FunctionCalling:
             print(f"Error occured(analyze):", e)
             return makeup_response("[analyze 오류입니다]")
         
-    def run(self, analyzed_dict, context):
+    def run(self, analyzed_dict):
         func_name = analyzed_dict["function_call"]["name"]
         func_to_call = self.available_functions[func_name]
         try:
             func_args = json.loads(analyzed_dict["function_call"]["arguments"])
             func_response = func_to_call(**func_args)
-            context.append({
+            function_context = {
                 "role": "function",
                 "name": func_name,
                 "content": str(func_response),
-            })
-            print("context:", context)
-            response = client.chat.completions.create(model=self.modelName,messages=context).model_dump()
-            self.chatbot.accumulate_token_usage(response)
-            self.chatbot.check_token_usage()
-            return response
+            }
+            self.chatbot.context.append(function_context)
+            return self.chatbot.send_request()
         except Exception as e:
             print(f"Error occured(run):", e)
             return makeup_response("[run 오류입니다]")

@@ -58,10 +58,14 @@ class Chatbot:
         return response
     
     def send_request(self):
-        self.context[-1]['content'] += self.instruction
+        self.context.append({
+            "role": "system",
+            "content": self.instruction
+        })
         return self._send_request()
 
     def add_response(self, response):
+        self.clean_instruction()
         self.context.append({
             "role": response['choices'][0]['message']['role'],
             "content": response['choices'][0]['message']['content']
@@ -72,10 +76,8 @@ class Chatbot:
         return self.context[-1]['content']
     
     def clean_instruction(self):
-        for idx  in reversed(range(len(self.context))):
-            if self.context[idx]['role'] == "user":
-                self.context[idx]["content"] = self.context[idx]["content"].split("instruction:\n")[0].strip()
-                break
+        if self.context[-1]['role'] == "system":
+            self.context.pop()
 
     def accumulate_token_usage(self, response):
         self.current_prompt_tokens = response['usage']['prompt_tokens']

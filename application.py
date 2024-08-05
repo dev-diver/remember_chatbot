@@ -31,7 +31,7 @@ def chat_api():
 
     analyzed_dict = func_calling.analyze(request_message, func_specs)
     if analyzed_dict.get("function_call"):
-        response = func_calling.run(analyzed_dict, jjinchin.context[:])
+        response = func_calling.run(analyzed_dict)
         jjinchin.add_response(response)
     else:
         response = jjinchin.send_request()
@@ -39,7 +39,7 @@ def chat_api():
 
     response_message = jjinchin.get_response_content()
     jjinchin.handle_token_limit()
-    jjinchin.clean_instruction()
+    
     print("response_message:", response_message)
     return {"response_message": response_message}
 
