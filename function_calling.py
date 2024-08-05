@@ -24,82 +24,97 @@ class FunctionCalling:
         self.modelName = modelName
         self.chatbot = chatbot
 
-    def analyze(self, user_message, func_specs):
+    def analyze(self, user_message, tools):
         try:
             response = client.chat.completions.create(
                 model=self.modelName,
                 messages=[{"role": "user", "content": user_message}],
-                functions = func_specs,
-                function_call = "auto",
-                )
+                tools=tools,
+                tool_choice = "auto",
+            )
             message = response.choices[0].message
             message_dict = message.model_dump()
+            pprint(("message=>", message))
             pprint(("message_dict=>", message_dict))
             self.chatbot.accumulate_token_usage(response.model_dump())
             self.chatbot.check_token_usage()
-            return message_dict
+            return message, message_dict
         except Exception as e:
             print(f"Error occured(analyze):", e)
             return makeup_response("[analyze 오류입니다]")
         
-    def run(self, analyzed_dict):
-        func_name = analyzed_dict["function_call"]["name"]
-        func_to_call = self.available_functions[func_name]
-        try:
-            func_args = json.loads(analyzed_dict["function_call"]["arguments"])
-            func_response = func_to_call(**func_args)
-            function_context = {
-                "role": "function",
-                "name": func_name,
-                "content": str(func_response),
-            }
-            self.chatbot.context.append(function_context)
-            return self.chatbot.send_request()
-        except Exception as e:
-            print(f"Error occured(run):", e)
-            return makeup_response("[run 오류입니다]")
+    def run(self, analyzed, analyzed_dict):
+        self.chatbot.context.append(analyzed)
+        tool_calls = analyzed_dict["tool_calls"]
+        for tool_call in tool_calls:
+            function = tool_call["function"]
+            func_name = function["name"]
+            func_to_call = self.available_functions[func_name]
+            try:
+                func_args = json.loads(function["arguments"])
+                func_response = func_to_call(**func_args)
+                function_context = {
+                    "tool_call_id" : tool_call["id"],
+                    "role": "tool",
+                    "name": func_name,
+                    "content": str(func_response),
+                }
+                self.chatbot.context.append(function_context)
+            except Exception as e:
+                print(f"Error occured(run):", e)
+                return makeup_response("[run 오류입니다]")
+        return self.chatbot.send_request()
 
-func_specs = [
+tools = [
     {
-        "name": "get_celsius_temperature",
-        "description": "지정된 위치의 현재 섭씨 날씨 확인",
-        "parameters": {
-            "type" : "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "광역시도, e.g. 서울, 경기",
-                }
-            },
-            "required": ["location"]
+        "type": "function",
+        "function":{
+            "name": "get_celsius_temperature",
+            "description": "지정된 위치의 현재 섭씨 날씨 확인",
+            "parameters": {
+                "type" : "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "광역시도, e.g. 서울, 경기",
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+    },
+    {   
+        "type": "function",
+        "function":{
+            "name": "get_currency",
+            "description": "지정된 통화의 원(KRW) 기준의 환율 확인",
+            "parameters": {
+                "type" : "object",
+                "properties": {
+                    "currency_name": {
+                        "type": "string",
+                        "description": "통화명, e.g. 달러환율, 엔화환율",
+                    }
+                },
+                "required": ["currency_name"]
+            }
         }
     },
     {
-        "name": "get_currency",
-        "description": "지정된 통화의 원(KRW) 기준의 환율 확인",
-        "parameters": {
-            "type" : "object",
-            "properties": {
-                "currency_name": {
-                    "type": "string",
-                    "description": "통화명, e.g. 달러환율, 엔화환율",
-                }
-            },
-            "required": ["currency_name"]
-        }
-    },
-    {
-        "name": "search_internet",
-        "description": "답변 시 인터넷 검색이 필요하다고 판단되는 경우 수행",
-        "parameters": {
-            "type" : "object",
-            "properties": {
-                "search_query": {
-                    "type": "string",
-                    "description": "인터넷 검색을 위한 검색어",
-                }
-            },
-            "required": ["search_query"]
+        "type": "function",
+        "function":{   
+            "name": "search_internet",
+            "description": "답변 시 인터넷 검색이 필요하다고 판단되는 경우 수행",
+            "parameters": {
+                "type" : "object",
+                "properties": {
+                    "search_query": {
+                        "type": "string",
+                        "description": "인터넷 검색을 위한 검색어",
+                    }
+                },
+                "required": ["search_query"]
+            }
         }
     }
 ]
