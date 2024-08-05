@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 from characters import system_role, instruction
 from chatbot import Chatbot
 from common import models
+from function_calling import FunctionCalling, func_specs
 
 jjinchin = Chatbot(
     modelName=models.basic,
@@ -9,6 +10,8 @@ jjinchin = Chatbot(
     system_role=system_role,
     instruction=instruction
 )
+
+func_calling = FunctionCalling(models.basic)
 
 application = Flask(__name__)
 
@@ -25,8 +28,15 @@ def chat_api():
     request_message = request.json['request_message']
     print("request_message:", request_message)
     jjinchin.add_user_message(request_message)
-    response = jjinchin.send_request()
-    jjinchin.add_response(response)
+
+    analyzed_dict = func_calling.analyze(request_message, func_specs)
+    if analyzed_dict.get("function_call"):
+        response = func_calling.run(analyzed_dict, jjinchin.context[:])
+        jjinchin.add_response(response)
+    else:
+        response = jjinchin.send_request()
+        jjinchin.add_response(response)
+
     response_message = jjinchin.get_response_content()
     jjinchin.handle_token_limit()
     jjinchin.clean_instruction()
