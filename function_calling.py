@@ -5,12 +5,21 @@ from pprint import pprint
 from tavily import TavilyClient
 import os
 
+tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+def search_internet(**kwargs):
+    print("search_internet:",kwargs)
+    answer = tavily.search(query=kwargs['search_query'], include_answer=True)['answer']
+    print("answer:",answer)
+    return answer
+
 class FunctionCalling:
 
     def __init__(self,modelName, chatbot):
         self.available_functions = {
             "get_celsius_temperature": get_celsius_temperature,
-            "get_currency": get_currency
+            "get_currency": get_currency,
+            "search_internet": search_internet,
         }
         self.modelName = modelName
         self.chatbot = chatbot
@@ -77,6 +86,20 @@ func_specs = [
                 }
             },
             "required": ["currency_name"]
+        }
+    },
+    {
+        "name": "search_internet",
+        "description": "답변 시 인터넷 검색이 필요하다고 판단되는 경우 수행",
+        "parameters": {
+            "type" : "object",
+            "properties": {
+                "search_query": {
+                    "type": "string",
+                    "description": "인터넷 검색을 위한 검색어",
+                }
+            },
+            "required": ["search_query"]
         }
     }
 ]
