@@ -26,8 +26,10 @@ def chat_api():
     print("request_message:", request_message)
     jjinchin.add_user_message(request_message)
     response = jjinchin.send_request()
-    response_message = response['choices'][0]['message']['content']
-    jjinchin.clean_context()
+    jjinchin.add_response(response)
+    response_message = jjinchin.get_response_content()
+    jjinchin.handle_token_limit()
+    jjinchin.clean_instruction()
     print("response_message:", response_message)
     return {"response_message": response_message}
 
