@@ -65,7 +65,7 @@ class Chatbot:
         return self._send_request()
 
     def add_response(self, response):
-        self.clean_instruction()
+        # self.clean_instruction()
         self.context.append({
             "role": response['choices'][0]['message']['role'],
             "content": response['choices'][0]['message']['content']
