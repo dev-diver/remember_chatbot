@@ -3,6 +3,7 @@ from characters import system_role, instruction
 from chatbot import Chatbot
 from common import models
 from function_calling import FunctionCalling, tools
+import atexit
 
 jjinchin = Chatbot(
     modelName=models.basic,
@@ -39,6 +40,11 @@ def chat_api():
     
     print("response_message:", response_message)
     return {"response_message": response_message}
+
+@atexit.register
+def shutdown():
+    print("Shutting down...")
+    jjinchin.save_chat()
 
 if __name__ == '__main__':
     application.run(host='0.0.0.0', port=8080)

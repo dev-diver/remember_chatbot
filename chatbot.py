@@ -1,5 +1,6 @@
 from common import client, models, makeup_response
 from warning_agent import WarningAgent
+from memory_manager import MemoryManager
 
 import time
 import math
@@ -16,7 +17,10 @@ class Chatbot:
         self.kwargs = kwargs
         self.user = kwargs["user"]
         self.assistant = kwargs["assistant"]
-        self.warning_agent = self._create_warning_agent()
+        self.memoryManager = MemoryManager()
+        self.context.extend(self.memoryManager.restore_chat())
+
+        # self.warning_agent = self._create_warning_agent()
         
         self.current_prompt_tokens = 0
         self.current_response_tokens = 0
@@ -44,13 +48,16 @@ class Chatbot:
     def add_user_message(self, message):
         self.context.append({"role": "user", "content": message})
 
+    def to_api_context(self):
+        return [{"role": message["role"], "content": message["content"]} for message in self.context]
+
     def _send_request(self):
         print("context:", self.context)
         start_time = time.time()
         try:
             response = client.chat.completions.create(
                 model=self.modelName, 
-                messages=self.context,
+                messages=self.to_api_context(),
                 temperature=0.5,
                 top_p=1,
                 max_tokens=256,
@@ -73,12 +80,12 @@ class Chatbot:
     
     def send_request(self):
 
-        if self.warning_agent.monitor_user(self.context):
-            response = self.warning_agent.warn_user()
-            self.accumulate_token_usage(response)
-            self.check_token_usage()
-            content = response['choices'][0]['message']['content']
-            return makeup_response(content, "warning")
+        # if self.warning_agent.monitor_user(self.context):
+        #     response = self.warning_agent.warn_user()
+        #     self.accumulate_token_usage(response)
+        #     self.check_token_usage()
+        #     content = response['choices'][0]['message']['content']
+        #     return makeup_response(content, "warning")
 
         self.context.append({
             "role": "system",
@@ -86,13 +93,24 @@ class Chatbot:
         })
         return self._send_request()
 
+    def add_user_message(self, message):
+        self.context.append({
+            "role": "user",
+            "content": message,
+            "saved": False
+        })
+
     def add_response(self, response):
         self.clean_instruction()
         self.context.append({
             "role": response['choices'][0]['message']['role'],
-            "content": response['choices'][0]['message']['content']
+            "content": response['choices'][0]['message']['content'],
+            "saved": False
             }
         )
+
+    def save_chat(self):
+        self.memoryManager.save_chat(self.context)
 
     def get_response_content(self):
         return self.context[-1]['content']
