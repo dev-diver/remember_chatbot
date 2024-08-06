@@ -1,21 +1,34 @@
 from common import client, models, makeup_response
+from warning_agent import WarningAgent
 
 import time
 import math
 class Chatbot:
 
-    def __init__(self, modelName, system_role, instruction):
+    def __init__(self, modelName, system_role, instruction, **kwargs):
         self.context = [{"role": "system", "content": system_role}]
         self.modelName = modelName
         self.instruction = instruction
+
+        self.max_token_size = 16 * 2024
+        self.available_token_rate = 0.9
+
+        self.kwargs = kwargs
+        self.user = kwargs["user"]
+        self.assistant = kwargs["assistant"]
+        self.warning_agent = self._create_warning_agent()
         
         self.current_prompt_tokens = 0
         self.current_response_tokens = 0
         self.total_prompt_tokens = 0
         self.total_response_tokens = 0
 
-        self.max_token_size = 16 * 2024
-        self.available_token_rate = 0.9
+    def _create_warning_agent(self):
+        return WarningAgent(
+            model=self.modelName,
+            user=self.user,
+            assistant=self.assistant
+        )
     
     def handle_token_limit(self): # tiktoken 패키지를 쓰면 더 좋음
         try:
@@ -53,11 +66,20 @@ class Chatbot:
                 return makeup_response("[내 찐친 챗봇에 문제가 발생했습니다. 잠시 뒤 이용해주세요.]")
         end_time = time.time()
         print("Elapsed time:", end_time - start_time)
+
         self.accumulate_token_usage(response)
         self.check_token_usage()
         return response
     
     def send_request(self):
+
+        if self.warning_agent.monitor_user(self.context):
+            response = self.warning_agent.warn_user()
+            self.accumulate_token_usage(response)
+            self.check_token_usage()
+            content = response['choices'][0]['message']['content']
+            return makeup_response(content, "warning")
+
         self.context.append({
             "role": "system",
             "content": self.instruction
@@ -65,7 +87,7 @@ class Chatbot:
         return self._send_request()
 
     def add_response(self, response):
-        # self.clean_instruction()
+        self.clean_instruction()
         self.context.append({
             "role": response['choices'][0]['message']['role'],
             "content": response['choices'][0]['message']['content']

@@ -8,7 +8,9 @@ jjinchin = Chatbot(
     modelName=models.basic,
     # modelName=models.advanced,
     system_role=system_role,
-    instruction=instruction
+    instruction=instruction,
+    user = "민지",
+    assistant = "고비",
 )
 
 func_calling = FunctionCalling(models.basic, jjinchin)
@@ -29,13 +31,8 @@ def chat_api():
     print("request_message:", request_message)
     jjinchin.add_user_message(request_message)
 
-    analyzed, analyzed_dict = func_calling.analyze(request_message, tools)
-    if analyzed_dict.get("tool_calls"):
-        response = func_calling.run(analyzed,analyzed_dict)
-        jjinchin.add_response(response)
-    else:
-        response = jjinchin.send_request()
-        jjinchin.add_response(response)
+    response = jjinchin.send_request()
+    jjinchin.add_response(response)
 
     response_message = jjinchin.get_response_content()
     jjinchin.handle_token_limit()

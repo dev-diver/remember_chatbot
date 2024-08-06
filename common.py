@@ -24,7 +24,7 @@ def makeup_response(message, finish_reason="ERROR"):
                 }
             }
         ],
-        "usage" : {"total_tokens": 0},
+        "usage" : {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0},
     }
 
 def today():
