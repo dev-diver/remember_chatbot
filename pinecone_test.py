@@ -26,3 +26,8 @@ index.upsert(
         {"id": "id2", "values": vector2, "metadata": {"input_date": "20230801"}}
     ]
 )
+
+query = "동화책"
+query_vector = client.embeddings.create(input=query, model="text-embedding-ada-002").data[0].embedding
+search_response = index.query(filter={"input_date": "20230801"}, top_k=2, vector=query_vector)
+print("search_response:", search_response)
