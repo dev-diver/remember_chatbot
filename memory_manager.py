@@ -4,6 +4,7 @@ from common import today, models, client, yesterday, currTime
 from pinecone.grpc import PineconeGRPC as Pinecone
 import json
 
+print("connection mongodb..")
 cluster = MongoClient("mongodb://localhost:27017/")
 db = cluster["chatbot"]
 mongo_chats_collection = db["chats"]
