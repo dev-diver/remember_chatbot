@@ -87,10 +87,13 @@ class Chatbot:
         #     content = response['choices'][0]['message']['content']
         #     return makeup_response(content, "warning")
 
-        self.context.append({
-            "role": "system",
-            "content": self.instruction
-        })
+        memory_instruction = self.retrieve_memory()
+        self.context[-1]['content'] += self.instruction + (memory_instruction if memory_instruction else "")
+
+        # self.context.append({
+        #     "role": "system",
+        #     "content": self.instruction
+        # })
         return self._send_request()
 
     def add_user_message(self, message):
@@ -112,12 +115,29 @@ class Chatbot:
     def save_chat(self):
         self.memoryManager.save_chat(self.context)
 
+    def retrieve_memory(self):
+        user_message = self.context[-1]['content']
+        if not self.memoryManager.needs_memory(user_message):
+            return
+        memory = self.memoryManager.retrieve_memory(user_message)
+        if memory is not None:
+            whisper = (f"[귓속말]\n{self.assistant}야! 기억 속의 대화 내용이야. 앞으로 이 내용을 참조하면서 답해줘."
+            f"얼마 전에 나누었던 대화라는 점을 자연스럽게 말해줘:\n{memory}")
+            self.add_user_message(whisper)
+        else:
+            return "[기억이 안 난다고 답할 것!]"
+
     def get_response_content(self):
         return self.context[-1]['content']
     
     def clean_instruction(self):
-        if self.context[-1]['role'] == "system":
-            self.context.pop()
+        for idx in reversed(range(len(self.context))):
+            if self.context[idx]["role"] == "user":
+                self.context[idx]["content"] = self.context[idx]["content"].split("instruction:\n")[0].strip()
+                break
+
+        # if self.context[-1]['role'] == "system":
+        #     self.context.pop()
 
     def accumulate_token_usage(self, response):
         self.current_prompt_tokens = response['usage']['prompt_tokens']
