@@ -21,7 +21,8 @@ application = Flask(__name__)
 @application.route('/chat-kakao', method=['POST'])
 def chat_kakao():
     print("request.json:", request.json)
-    return ""
+    response_to_kakao = format_response("반가워")
+    return response_to_kakao
 
 @application.route('/')
 def hello():
@@ -50,6 +51,21 @@ def chat_api():
 def shutdown():
     print("Shutting down...")
     jjinchin.save_chat()
+
+def format_response(resp):
+    data = {
+        "version"  : "2.0",
+        "template" : {
+            "outputs": [
+                {
+                    "simpleText": {
+                        "text": resp
+                    }
+                }
+            ]
+        }
+    }
+    return data
 
 if __name__ == '__main__':
     application.run(host='0.0.0.0', port=3000)
