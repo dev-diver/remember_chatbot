@@ -515,11 +515,13 @@
                         this.render('', null, response.response_python_code, false); // 파이썬 코드 처리
                     }
 					if (response.audio) {
+                        let message = response.response_message;
                         let audioPlayer = document.getElementById('audioPlayer');
                         audioPlayer.src = response.audio;
-                        this.showResponse("[오디오 재생]"); // 텍스트 메시지 처리
+                        this.showResponse(message ? message :"[오디오 재생]"); // 텍스트 메시지 처리
                         audioPlayer.play();
                     }
+                    
                     if (response.image) {
                         this.render('', response.image, null, false); // 이미지 처리
                     }

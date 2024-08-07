@@ -44,7 +44,6 @@ def chat_api():
     response_audio = None    
     if response_image is not None:    
         response_audio = url_for('audio_route', message=response_message, _external=True)    
-        response_message = ""
 
     print("response_message:", response_message)
     return {"response_message" : response_message, "image": response_image, "audio": response_audio}
