@@ -1,0 +1,55 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "펀드 수익율 및 자산현황 조회 API",
+      "description": "사용자가 질의한 펀드에 대해 수익율과 자산현황을 조회한다.",
+      "version": "v1.0.0"
+    },
+    "servers": [
+      {
+        "url": "https://api.open-meteo.com/v1"
+      }
+    ],
+    "paths": {
+      "/forecast": {
+        "get": {
+          "description": "기온을 가져온다.",
+          "operationId": "get_celsius_temperature",	
+          "parameters": [
+            {
+              "name": "latitude",
+              "in": "query",
+              "description": "latitude",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "longitude",
+              "in": "query",
+              "description": "longitude",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "current_weather",
+              "in": "query",
+              "description": "현재 날씨 정보를 포함할지 여부",
+              "required": false,
+              "schema": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          ],
+          "deprecated": false
+        }
+      }
+    },
+    "components": {
+      "schemas": {}
+    }
+  }
