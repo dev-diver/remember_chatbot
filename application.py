@@ -18,6 +18,11 @@ func_calling = FunctionCalling(models.basic, jjinchin)
 
 application = Flask(__name__)
 
+@application.route('/chat-kakao', method=['POST'])
+def chat_kakao():
+    print("request.json:", request.json)
+    return ""
+
 @application.route('/')
 def hello():
     return "Hello there!"
