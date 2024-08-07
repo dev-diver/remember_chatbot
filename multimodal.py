@@ -63,6 +63,17 @@ def create_image(jjinchin):
     else:
         return None, "지금은 그림을 그리기가 좀 힘드네. 다음에 그려줄게 미안해!"
 
+def generate_speech(user_message):
+    try:
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice="nova",
+            input=user_message,
+        )
+        return response.content
+    except Exception as e:
+        print(f"Exception 오류({type(e)}) 발생:{e}")
+        return ""
 
     
     

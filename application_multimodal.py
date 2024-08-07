@@ -40,8 +40,21 @@ def chat_api():
     jjinchin.add_response(response)        
     response_message = jjinchin.get_response_content()         
     jjinchin.handle_token_limit()
+
+    response_audio = None    
+    if response_image is not None:    
+        response_audio = url_for('audio_route', message=response_message, _external=True)    
+        response_message = ""
+
     print("response_message:", response_message)
-    return {"response_message" : response_message, "image": response_image}
- 
+    return {"response_message" : response_message, "image": response_image, "audio": response_audio}
+
+@application.route('/audio')
+def audio_route():
+    user_message = request.args.get('message', '')
+    # TTS 요청
+    speech = multimodal.generate_speech(user_message)
+    return Response(speech, mimetype='audio/mpeg')    
+
 if __name__ == "__main__":  
     application.run(host="0.0.0.0", port=3000)
