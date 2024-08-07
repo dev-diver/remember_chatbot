@@ -44,24 +44,28 @@ def is_drawing_request(user_message):
         return False
 
 def create_image(jjinchin):    
-    user_message = jjinchin.context[-1]['content'] + "단, 배경색은 하얀색으로 할 것"        
-    url_response = client.images.generate(
-        model = "dall-e-3",
-        prompt = user_message,
-        size="1792x1024",
-        quality = "standard",
-        n=1,
-    )    
-    # 이미지를 요청하고 응답을 받습니다.
-    image_response = requests.get(url_response.data[0].url)
-    # 요청이 성공했는지 확인합니다. (200 OK)
-    if image_response.status_code == 200:
-        prompt = f"{user_message}=> 당신은 민지에게 다음 그림을 그려 주었습니다. 왜 이런 그림을 그렸는지 설명하세요.:\n{jjinchin.instruction}"
-        encoded_image = base64.b64encode(image_response.content).decode('utf-8')        
-        response = ask_gpt_vision(prompt, encoded_image)
-        return encoded_image, response        
-    else:
-        return None, "지금은 그림을 그리기가 좀 힘드네. 다음에 그려줄게 미안해!"
+    user_message = jjinchin.context[-1]['content'] + "단, 배경색은 하얀색으로 할 것"
+    try:      
+        url_response = client.images.generate(
+            model = "dall-e-3",
+            prompt = user_message,
+            size="1792x1024",
+            quality = "standard",
+            n=1,
+        )    
+        # 이미지를 요청하고 응답을 받습니다.
+        image_response = requests.get(url_response.data[0].url)
+        # 요청이 성공했는지 확인합니다. (200 OK)
+        if image_response.status_code == 200:
+            prompt = f"{user_message}=> 당신은 민지에게 다음 그림을 그려 주었습니다. 왜 이런 그림을 그렸는지 설명하세요.:\n{jjinchin.instruction}"
+            encoded_image = base64.b64encode(image_response.content).decode('utf-8')        
+            response = ask_gpt_vision(prompt, encoded_image)
+            return encoded_image, response        
+        else:
+            return None, "지금은 그림을 그리기가 좀 힘드네. 다음에 그려줄게 미안해!"
+    except Exception as e:
+        print(f"Exception 오류({type(e)}) 발생:{e}")
+        return None, "좀 곤란한 그림이네. 다음에 그려줄게 미안해!"
 
 def generate_speech(user_message):
     try:
