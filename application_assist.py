@@ -32,4 +32,4 @@ def chat_api():
     return {"response_message": response_message, "response_python_code": response_python_code} #파이썬 코드가 있으면 같이 보냄
 
 if __name__ == "__main__":
-    application.run(host='0.0.0.0', port=8080)
+    application.run(host='0.0.0.0', port=3000)
