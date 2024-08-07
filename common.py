@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 class Models:
     basic: str = "gpt-3.5-turbo-1106"
     advanced: str = "gpt-4-1106-preview"
+    vision: str = "gpt-4o"
 
 models = Models()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), timeout=30, max_retries=1)

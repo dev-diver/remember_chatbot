@@ -18,7 +18,7 @@ def ask_gpt_vision(prompt, encoded_image):
     ]
     print("gpt-vision 요청")
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=models.vision,
         messages=context,
         max_tokens=300,
     )
