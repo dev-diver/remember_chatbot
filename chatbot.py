@@ -1,6 +1,7 @@
 from common import client, models, makeup_response
 from warning_agent import WarningAgent
 from memory_manager import MemoryManager
+import threading
 
 import time
 import math
@@ -17,8 +18,8 @@ class Chatbot:
         self.kwargs = kwargs
         self.user = kwargs["user"]
         self.assistant = kwargs["assistant"]
-        self.memoryManager = MemoryManager()
-        self.context.extend(self.memoryManager.restore_chat())
+        self.memoryManager = MemoryManager(**kwargs)
+        self.context.extend(self.memoryManager.restore_chat()) # 오늘 대화만 불러옴
 
         # self.warning_agent = self._create_warning_agent()
         
@@ -26,6 +27,16 @@ class Chatbot:
         self.current_response_tokens = 0
         self.total_prompt_tokens = 0
         self.total_response_tokens = 0
+
+        bg_thread = threading.Thread(target=self.background_task) # 락 등은 구현 안 함
+        bg_thread.daemon = True
+        bg_thread.start()
+    
+    def background_task(self):
+        while True:
+            self.save_chat() # 대화 내용도 기록하고
+            self.memoryManager.build_memory() # 요약도 기록함
+            time.sleep(60)  # 1시간마다 반복
 
     def _create_warning_agent(self):
         return WarningAgent(
@@ -114,6 +125,7 @@ class Chatbot:
 
     def save_chat(self):
         self.memoryManager.save_chat(self.context)
+        self.context = [{"role": v['role'], "content": v['content'], "saved": True} for v in self.context]
 
     def retrieve_memory(self):
         user_message = self.context[-1]['content']
@@ -156,7 +168,6 @@ class Chatbot:
         print("total_token_usage:", self.total_prompt_tokens + self.total_response_tokens)
         print("---")
         
-
 if __name__ == "__main__":
     chatbot = Chatbot(models.basic)
 
