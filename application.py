@@ -28,9 +28,6 @@ def chat_api():
     request_message = request.form.get("message")
     print("request_message:", request_message)
     jjinchin.add_user_message(request_message)
-
-    response = jjinchin.send_request()
-
     response_image = None
     image_file = request.files.get('image')
     if image_file is not None:
