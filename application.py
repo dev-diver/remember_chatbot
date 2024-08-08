@@ -2,7 +2,7 @@ from flask import Flask, render_template, request
 from characters import system_role, instruction
 from chatbot import Chatbot
 from common import models
-from function_calling import FunctionCalling, tools
+from function_calling import FunctionCalling
 import atexit
 
 jjinchin = Chatbot(
@@ -18,23 +18,13 @@ func_calling = FunctionCalling(models.basic, jjinchin)
 
 application = Flask(__name__)
 
-@application.route('/chat-kakao', methods=['POST'])
-def chat_kakao():
-    print("request.json:", request.json)
-    response_to_kakao = format_response("반가워")
-    return response_to_kakao
-
-@application.route('/')
-def hello():
-    return "Hello there!"
-
 @application.route('/chat-app')
 def chat_app():
     return render_template('chat.html')
 
 @application.route('/chat-api', methods=['POST'])
 def chat_api():
-    request_message = request.json['request_message']
+    request_message = request.form.get("message")
     print("request_message:", request_message)
     jjinchin.add_user_message(request_message)
 
@@ -51,21 +41,6 @@ def chat_api():
 def shutdown():
     print("Shutting down...")
     jjinchin.save_chat()
-
-def format_response(resp):
-    data = {
-        "version"  : "2.0",
-        "template" : {
-            "outputs": [
-                {
-                    "simpleText": {
-                        "text": resp
-                    }
-                }
-            ]
-        }
-    }
-    return data
 
 if __name__ == '__main__':
     print("Starting the application")

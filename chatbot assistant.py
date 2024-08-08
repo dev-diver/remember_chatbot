@@ -51,7 +51,7 @@ class Chatbot:
                 client.beta.threads.runs.cancel(thread_id=self.thread.id, run_id=self.runs[0])
             raise e	
 
-    def get_response_content(self, run) -> (openai.types.beta.threads.run.Run, str):
+    def get_response_content(self, run) -> tuple[openai.types.beta.threads.run.Run, str]:
         max_polling_time = 60
         start_time = time.time()
         retrieved_run = run
