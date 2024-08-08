@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request 
 import sys
-from finance_chatbot import Chatbot
-
+from finance_chatbot_assistant import Chatbot
 
 # jjinchin 인스턴스 생성
 jjinchin = Chatbot(

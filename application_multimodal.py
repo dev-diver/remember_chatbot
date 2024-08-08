@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, Response, url_for
-import sys
 from common import models
 from chatbot import Chatbot
 from characters import system_role, instruction
