@@ -56,7 +56,7 @@ class WarningAgent:
             {"role": "user", "content": self.user_monitor_template + dialogue, "saved": False}
         ]
         try:
-            response = self.send_query(context)
+            response = self.send_query(context, is_json=True)
             content = json.loads(response)
             self.checked_list = [value for value in content.values()]
         except Exception as e:
@@ -75,6 +75,7 @@ class WarningAgent:
         return response
     
     def send_query(self, context : list[Context], temperature : float=0, is_json :bool=False) -> str:
+
         try:
             start_time = time.time()
             response = request_to_llm(
@@ -82,7 +83,7 @@ class WarningAgent:
                 modelName=self.model,
                 context=context,
                 temperature=temperature,
-                
+                format = "json" if is_json else ""
             )
             end_time = time.time()
             print(f"Elapsed time: {end_time - start_time}")

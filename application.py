@@ -5,6 +5,7 @@ from common import OllamaModels
 # from function_calling import FunctionCalling
 # import multimodal
 import atexit
+import time
 
 jjinchin = Chatbot(
     modelName=OllamaModels.basic,
@@ -25,6 +26,7 @@ def chat_app():
 
 @application.route('/chat-api', methods=['POST'])
 def chat_api():
+    start_time = time.time()
     request_message = request.form.get("message", "")
     print("request_message:", request_message)
     jjinchin.add_user_message(request_message)
@@ -49,6 +51,8 @@ def chat_api():
     #     response_audio = url_for('audio_route', message=response_message, _external=True) 
     
     print("response_message:", response_message)
+    end_time = time.time()
+    print("총 시간:", end_time - start_time)
     return {"response_message" : response_message}
     # return {"response_message" : response_message, "image": response_image, "audio": response_audio}
 

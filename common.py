@@ -68,6 +68,7 @@ def request_to_llm(platform :str, modelName :str, context :list[Context], **kwar
     print("prompt_context:", prompt_context)
     print("요청중..")
     response = model.invoke(prompt_context)
+    print("응답:", response)
     content = getattr(response, "content", "")
     return content
 

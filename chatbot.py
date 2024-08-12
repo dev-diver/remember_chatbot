@@ -28,7 +28,7 @@ class Chatbot:
         self.memoryManager = MemoryManager(**kwargs)
         # self.context.extend(self.memoryManager.restore_chat()) # 오늘 대화만 불러옴
 
-        # self.warning_agent = self._create_warning_agent()
+        self.warning_agent = self._create_warning_agent()
         
         self.current_prompt_tokens = 0
         self.current_response_tokens = 0
@@ -87,9 +87,9 @@ class Chatbot:
     
     def send_request(self) -> str:
 
-        # if self.warning_agent.monitor_user(self.context):
-        #     content = self.warning_agent.warn_user()
-        #     return content
+        if self.warning_agent.monitor_user(self.context):
+            content = self.warning_agent.warn_user()
+            return content
 
         memory_instruction = None#self.retrieve_memory()
         self.context[-1]['content'] += self.instruction + (memory_instruction if memory_instruction else "")
@@ -110,7 +110,7 @@ class Chatbot:
     def add_response(self, response: str) -> None:
         self.clean_instruction()
         self.context.append({
-            "role": "system",
+            "role": "assistant",
             "content": response,
             "saved": False
             }
