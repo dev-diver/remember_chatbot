@@ -1,18 +1,28 @@
 from pymongo import MongoClient
+from pymongo.database import Database
+
 import os
-from common import today, models, client, yesterday, currTime
+from common import today, models, client, request_to_llm, ChatbotKwargs
+from chatbot import Context
+
 from pinecone.grpc import PineconeGRPC as Pinecone
 import json
+from typing import Any, Dict
+from pymongo.cursor import Cursor
+
+from typing import Dict, Any, Unpack
+
+from pinecone.grpc.index_grpc import GRPCIndex
 
 print("connection mongodb..")
-cluster = MongoClient("mongodb://localhost:27017/")
-db = cluster["chatbot"]
+cluster : MongoClient[Dict[str,Any]] = MongoClient("mongodb://localhost:27017/")
+db :Database[Any] = cluster["chatbot"]
 mongo_chats_collection = db["chats"]
 mongo_memory_collection = db["memory"]
 
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 pinecone = Pinecone(api_key=pinecone_api_key)
-pinecone_index = pinecone.Index("chatbot")
+pinecone_index : GRPCIndex = pinecone.Index("chatbot") #type: ignore
 
 embedding_model = "text-embedding-ada-002"
 
@@ -49,49 +59,49 @@ SUMMARIZING_TEMPLATE = """
 
 class MemoryManager:
 
-    def __init__(self, **kwargs):
-        self.user = kwargs["user"]
-        self.assistant = kwargs["assistant"]
+    def __init__(self, **kwargs : Unpack[ChatbotKwargs]):
+        self.user = kwargs.get("user", "사용자")
+        self.assistant = kwargs.get("assistant", "챗봇")
         
-    def search_mongo_db(self, _id):
+    def search_mongo_db(self, _id :str) -> str:
         search_result = mongo_memory_collection.find_one({"_id": int(_id)})
         print("search_result", search_result)
+
+        if search_result is None:
+            raise ValueError(f"search_mongo_db: {_id} not found")
         return search_result["summary"]
     
-    def search_vector_db(self, message):
+    def search_vector_db(self, message :str) -> str|None:
         query_vector = client.embeddings.create(
             input = message,
             model=embedding_model
         ).data[0].embedding
-        results = pinecone_index.query(
-            top_k=1,
+        results = pinecone_index.query( #type: ignore
             vector=query_vector,
+            top_k=1,
             include_metadata=True,
         )
         id, score = results['matches'][0]['id'], results['matches'][0]['score']
         print("id", id, "score", score)
         return id if score > 0.7 else None
     
-    def filter(self, message, memory, threshhold=0.6):
-        context = [
-            {"role": "system", "content": MEASURING_SIMILARITY_SYSTEM_ROLE},
-            {"role": "user", "content": f'{{"statement1": "민지:{message}, "statement2": {memory}}}'}
+    def filter(self, message :str, memory :str, threshhold :float=0.6):
+        context :list[Context] = [
+            {"role": "system", "content": MEASURING_SIMILARITY_SYSTEM_ROLE, "saved": False},
+            {"role": "user", "content": f'{{"statement1": "민지:{message}, "statement2": {memory}}}', "saved": False}
         ]
         try:
-            response = client.chat.completions.create(
-                model=models.advanced,
-                messages=context,
-                temperature=0,
-                response_format={"type":"json_object"}
-            ).model_dump()
-            prob = json.loads(response['choices'][0]['message']['content'])['probability']
+            response = request_to_llm("ollama", models.advanced, context, temperature=0)
+
+            resp = json.loads(response)
+            prob = resp['probablility']
             print("filter prob", prob)
         except Exception as e:
             print("filter exception", e)
             prob=0
         return prob >= threshhold
     
-    def retrieve_memory(self,message):
+    def retrieve_memory(self, message :str) -> str|None:
         vector_id = self.search_vector_db(message)
         if not vector_id:
             return None
@@ -101,21 +111,16 @@ class MemoryManager:
         else:
             return None
     
-    def needs_memory(self, message):
-        context = [{"role":"user", "content": NEEDS_MEMORY_TEMPLATE.format(message=message)}]
+    def needs_memory(self, message:str) -> bool:
+        context : list[Context] = [{"role":"user", "content": NEEDS_MEMORY_TEMPLATE.format(message=message), "saved": False}]
         try:
-            response = client.chat.completions.create(
-                model=models.advanced,
-                messages=context,
-                temperature=0,
-            ).model_dump()
-            print("needs_memory", response['choices'][0]['message']['content'])
-            return True if response['choices'][0]['message']['content'].upper() == "TRUE" else False
-        except Exception as e:
+            response = request_to_llm("ollama", models.advanced, context, temperature=0)
+            return True if response.upper() == "TRUE" else False
+        except Exception:
             return False
     
-    def save_chat(self, context):
-        messages = []
+    def save_chat(self, context : list[Context]):
+        messages :list[dict[str,str]] = []
         for message in context:
             if message.get("saved", True):
                 continue
@@ -125,33 +130,34 @@ class MemoryManager:
             mongo_chats_collection.insert_many(messages)
         print("대화 저장 완료: " , messages)
 
-    def restore_chat(self, date=None):
+    def restore_chat(self, date: str|None=None) -> list[Context]:
         search_date = date if date is not None else today()
-        search_results = mongo_chats_collection.find({"date":search_date})
-        restored_chat = [{"role": v['role'], "content": v['content'], "saved": True} for v in search_results]
+        search_results : Cursor[Any] = mongo_chats_collection.find({"date":search_date})
+        restored_chat : list[Context] = [{"role": v['role'], "content": v['content'], "saved": True} for v in search_results]
         return restored_chat
     
-    def summarize(self, messages):
+    def summarize(self, messages : list[Context]) -> list[dict[str,str]]:
         altered_messages = [
             {
                 f"{self.user if message['role'] == 'user' else self.assistant}": message['content']
             } for message in messages
         ]
         try:
-            context = [
-                {"role":"system", "content":SUMMARIZING_TEMPLATE},
-                {"role":"user", "content": json.dumps(altered_messages, ensure_ascii=False)}]
-            response = client.chat.completions.create(
-                model=models.basic,
-                messages=context,
+            context : list[Context] = [
+                {"role":"system", "content":SUMMARIZING_TEMPLATE, "saved": False},
+                {"role":"user", "content": json.dumps(altered_messages, ensure_ascii=False), "saved": False}
+            ]
+            response = request_to_llm(
+                "ollama", 
+                models.advanced, 
+                context, 
                 temperature=0,
-                response_format={"type":"json_object"}
-            ).model_dump()
-            return json.loads(response['choices'][0]['message']['content'])['data']
-        except Exception as e:
+                format="json"
+            )
+            return json.loads(response)['data']
+        except Exception:
             return []
 
-    
     def build_memory(self):
         date = today()
         memory_results = mongo_memory_collection.find({"date":date})
@@ -161,19 +167,21 @@ class MemoryManager:
         if len(list(chats_results)) == 0:
             return
         summaries = self.summarize(chats_results)
-        self.delete_by_date(date) #1시간 마다 반복이기 때문에, 중복이 생겨서 추가를 의도. 길이가 길면 실행 안되게는 왜 했는지 모르겠음..
+        self.delete_by_date(date) 
         self.save_to_memory(summaries,date)
         print("기억 저장 완료", summaries)
     
-    def delete_by_date(self,date):
+    def delete_by_date(self,date :str):
         search_results = mongo_memory_collection.find({"date":date})
         ids = [ str(v['_id']) for v in search_results]
         if len(ids) == 0:
             return
-        pinecone_index.delete(ids=ids)
+        pinecone_index.delete( #type: ignore
+            ids=ids
+        )
         mongo_memory_collection.delete_many({"date":date})
 
-    def save_to_memory(self, summaries, date):
+    def save_to_memory(self, summaries: list[dict[str, str]], date: str):
         next_id = self.next_memory_id() #id 일치를 위함
         for summary in summaries:
             vector = client.embeddings.create(
@@ -181,7 +189,9 @@ class MemoryManager:
                 model=embedding_model
             ).data[0].embedding
             metadata = {"date":date, "summary":summary['주제']}
-            pinecone_index.upsert([(str(next_id), vector, metadata)])
+            pinecone_index.upsert( #type: ignore
+                [(str(next_id), vector, metadata)]
+            )
 
             query = {"_id":next_id}
             newvalues = {"$set": {"date":date, "keyword": summary['주제'], "summary":summary['요약']}}
