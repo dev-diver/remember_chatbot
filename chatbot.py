@@ -4,7 +4,6 @@ from memory_manager import MemoryManager
 # import threading
 
 from characters import system_role, instruction
-
 from typing import Unpack
 
 import time
@@ -26,7 +25,7 @@ class Chatbot:
         self.user = kwargs.get("user", "사용자")
         self.assistant = kwargs.get("assistant", "챗봇")
         self.memoryManager = MemoryManager(**kwargs)
-        # self.context.extend(self.memoryManager.restore_chat()) # 오늘 대화만 불러옴
+        self.context.extend(self.memoryManager.restore_chat()) # 오늘 대화만 불러옴
 
         self.warning_agent = self._create_warning_agent()
         
@@ -43,7 +42,7 @@ class Chatbot:
         while True:
             self.save_chat() # 대화 내용도 기록하고
             self.memoryManager.build_memory() # 요약도 기록함
-            time.sleep(3600)  # 1시간마다 반복
+            time.sleep(60)  # 1시간마다 반복
 
     def _create_warning_agent(self):
         return WarningAgent(
@@ -87,17 +86,16 @@ class Chatbot:
     
     def send_request(self) -> str:
 
-        if self.warning_agent.monitor_user(self.context):
-            content = self.warning_agent.warn_user()
-            return content
+        # if self.warning_agent.monitor_user(self.context):
+        #     content = self.warning_agent.warn_user()
+        #     return content
+        has_memory = self.retrieve_memory()
+        if not has_memory:
+            self.add_user_message("기억 안 난다고 말해" )
+            # self.context[-1]['content'] = "기억 안 난다고 말해" 
+        self.context[-1]['content'] += self.instruction
+        
 
-        memory_instruction = None#self.retrieve_memory()
-        self.context[-1]['content'] += self.instruction + (memory_instruction if memory_instruction else "")
-
-        # self.context.append({
-        #     "role": "system",
-        #     "content": self.instruction
-        # })
         return self._send_request()
 
     def add_user_message(self, message:str) -> None:
@@ -123,15 +121,16 @@ class Chatbot:
     def retrieve_memory(self):
         user_message = self.context[-1]['content']
         if not self.memoryManager.needs_memory(user_message):
-            return
+            return True
         memory = self.memoryManager.retrieve_memory(user_message)
         if memory is not None:
             whisper = (f"[귓속말]\n{self.assistant}야! 기억 속의 대화 내용이야. 앞으로 이 내용을 참조하면서 답해줘."
             f"얼마 전에 나누었던 대화라는 점을 자연스럽게 말해줘:\n{memory}")
             self.add_user_message(whisper)
+            return True
         else:
-            return "[기억이 안 난다고 답할 것!]"
-
+            return False
+        
     def get_response_content(self):
         return self.context[-1]['content']
     
@@ -140,9 +139,6 @@ class Chatbot:
             if self.context[idx]["role"] == "user":
                 self.context[idx]["content"] = self.context[idx]["content"].split("instruction:\n")[0].strip()
                 break
-
-        # if self.context[-1]['role'] == "system":
-        #     self.context.pop()
         
 if __name__ == "__main__":
     chatbot = Chatbot(models.basic, system_role, instruction, user="민지", assistant="고비")

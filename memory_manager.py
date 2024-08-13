@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 
 import os
-from common import today, models, client, request_to_llm, ChatbotKwargs
+from common import today, ollamaModelNames, request_to_llm, embedding_to_vector , ChatbotKwargs
 from chatbot import Context
 
 from pinecone.grpc import PineconeGRPC as Pinecone
@@ -14,22 +14,34 @@ from typing import Dict, Any, Unpack
 
 from pinecone.grpc.index_grpc import GRPCIndex
 
+PINECONE_INDEX = "chatbot-eu"
+MONGODB_COLLECTION = "memory"
+
 print("connection mongodb..")
 cluster : MongoClient[Dict[str,Any]] = MongoClient("mongodb://localhost:27017/")
 db :Database[Any] = cluster["chatbot"]
 mongo_chats_collection = db["chats"]
-mongo_memory_collection = db["memory"]
+mongo_memory_collection = db[MONGODB_COLLECTION]
 
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 pinecone = Pinecone(api_key=pinecone_api_key)
-pinecone_index : GRPCIndex = pinecone.Index("chatbot") #type: ignore
+pinecone_index : GRPCIndex = pinecone.Index(PINECONE_INDEX) #type: ignore
 
 embedding_model = "text-embedding-ada-002"
 
+
+
 NEEDS_MEMORY_TEMPLATE = """
-Answer only true/false if the user query belows asks about memories before today.
-```
+Answer if the user query belows asks about memories before today. you don't need to worry about if you know the memory.
+make json format like below
+```message
 {message}
+```
+```json
+{{
+    'needs_memory': boolean,
+    'reason': string
+}}
 ```
 """
 
@@ -72,10 +84,7 @@ class MemoryManager:
         return search_result["summary"]
     
     def search_vector_db(self, message :str) -> str|None:
-        query_vector = client.embeddings.create(
-            input = message,
-            model=embedding_model
-        ).data[0].embedding
+        query_vector = embedding_to_vector(message)
         results = pinecone_index.query( #type: ignore
             vector=query_vector,
             top_k=1,
@@ -91,10 +100,16 @@ class MemoryManager:
             {"role": "user", "content": f'{{"statement1": "민지:{message}, "statement2": {memory}}}', "saved": False}
         ]
         try:
-            response = request_to_llm("ollama", models.advanced, context, temperature=0)
+            response = request_to_llm(
+                "ollama", 
+                ollamaModelNames.advanced, 
+                context, 
+                temperature=0,
+                format="json"
+            )
 
             resp = json.loads(response)
-            prob = resp['probablility']
+            prob = resp['probability']
             print("filter prob", prob)
         except Exception as e:
             print("filter exception", e)
@@ -102,6 +117,7 @@ class MemoryManager:
         return prob >= threshhold
     
     def retrieve_memory(self, message :str) -> str|None:
+        print("기억 검색중", message)
         vector_id = self.search_vector_db(message)
         if not vector_id:
             return None
@@ -112,11 +128,21 @@ class MemoryManager:
             return None
     
     def needs_memory(self, message:str) -> bool:
+        print("기억 검색이 필요한지 검사중")
         context : list[Context] = [{"role":"user", "content": NEEDS_MEMORY_TEMPLATE.format(message=message), "saved": False}]
         try:
-            response = request_to_llm("ollama", models.advanced, context, temperature=0)
-            return True if response.upper() == "TRUE" else False
-        except Exception:
+            response = request_to_llm(
+                "ollama", 
+                ollamaModelNames.advanced, 
+                context, 
+                temperature=0,
+                format="json"
+            )
+            response = json.loads(response)
+            print("기억 필요", response)
+            return response['needs_memory']
+        except Exception as e:
+            print("needs_memory exception", e)
             return False
     
     def save_chat(self, context : list[Context]):
@@ -149,7 +175,7 @@ class MemoryManager:
             ]
             response = request_to_llm(
                 "ollama", 
-                models.advanced, 
+                ollamaModelNames.advanced, 
                 context, 
                 temperature=0,
                 format="json"
@@ -184,15 +210,11 @@ class MemoryManager:
     def save_to_memory(self, summaries: list[dict[str, str]], date: str):
         next_id = self.next_memory_id() #id 일치를 위함
         for summary in summaries:
-            vector = client.embeddings.create(
-                input = summary['요약'],
-                model=embedding_model
-            ).data[0].embedding
+            vector = embedding_to_vector(summary['요약'])
             metadata = {"date":date, "summary":summary['주제']}
             pinecone_index.upsert( #type: ignore
                 [(str(next_id), vector, metadata)]
             )
-
             query = {"_id":next_id}
             newvalues = {"$set": {"date":date, "keyword": summary['주제'], "summary":summary['요약']}}
             mongo_memory_collection.update_one(query, newvalues, upsert=True)

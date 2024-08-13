@@ -4,7 +4,7 @@ from chatbot import Chatbot
 from common import OllamaModels
 # from function_calling import FunctionCalling
 # import multimodal
-import atexit
+# import atexit
 import time
 
 jjinchin = Chatbot(
@@ -63,10 +63,10 @@ def chat_api():
 #     speech = multimodal.generate_speech(user_message)
 #     return Response(speech, mimetype='audio/mpeg')
 
-@atexit.register
-def shutdown():
-    print("Shutting down...")
-    jjinchin.save_chat()
+# @atexit.register
+# def shutdown():
+#     print("Shutting down...")
+#     jjinchin.save_chat()
 
 if __name__ == '__main__':
     print("Starting the application")
