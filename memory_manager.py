@@ -90,9 +90,13 @@ class MemoryManager:
             top_k=1,
             include_metadata=True,
         )
+
+        # cos_threshold = 0.7
+        dist_threshold = 27
+
         id, score = results['matches'][0]['id'], results['matches'][0]['score']
         print("id", id, "score", score)
-        return id if score > 0.7 else None
+        return id if score < dist_threshold else None
     
     def filter(self, message :str, memory :str, threshhold :float=0.6):
         context :list[Context] = [
