@@ -23,14 +23,13 @@ sentence_model = SentenceTransformer(modules=[word_embedding_model, pooling_mode
 # sentence 모델 저장
 sentence_model.save(model_path)
 
-
-
 def embedding_to_vector(model_path:str, input :str):
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     embedding_model = AutoModel.from_pretrained(model_path) #type: ignore
     inputs = tokenizer(input, return_tensors="pt", truncation=True, padding=True)
     inputs.pop("token_type_ids")
     outputs = embedding_model(**inputs) #type: ignore
+    print(outputs)
     tensor = outputs.last_hidden_state #type: ignore
     # embedding_vector = tensor[0][0].tolist()
     embedding_vector = tensor.mean(dim=1).squeeze().tolist()
@@ -43,10 +42,10 @@ def sentence_embedding_to_vector(model_path:str, input: str):
 
 text = "안녕하세요"
 embedding = embedding_to_vector(model_path, text)
-sentence_embedding = sentence_embedding_to_vector(model_path, text)
-print("-"*100, "embedding\n", embedding)
-print("-"*100, "sentence\n" ,sentence_embedding)
-if(embedding == sentence_embedding):
-    print("same")
-else:
-    print("different")
+# sentence_embedding = sentence_embedding_to_vector(model_path, text)
+# print("-"*100, "embedding\n", embedding)
+# print("-"*100, "sentence\n" ,sentence_embedding)
+# if(embedding == sentence_embedding):
+#     print("same")
+# else:
+#     print("different")
