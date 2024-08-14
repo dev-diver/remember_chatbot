@@ -20,7 +20,7 @@ jjinchin = Chatbot(
 
 application = Flask(__name__)
 
-@application.route('/chat-app')
+@application.route('/')
 def chat_app():
     return render_template('chat.html')
 

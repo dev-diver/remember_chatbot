@@ -11,14 +11,11 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, Base
 from typing import TypedDict, Optional, Literal, cast
 from typing_extensions import Unpack
 import time
-
-from transformers import AutoTokenizer, AutoModel
+from langchain_huggingface import HuggingFaceEmbeddings
 
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
-
-tokenizer = AutoTokenizer.from_pretrained("./local_kobert")
-embedding_model = AutoModel.from_pretrained("./local_kobert") #type: ignore
-
+model_name :str = "bespin-global/klue-sroberta-base-continue-learning-by-mnr"
+embeddings = HuggingFaceEmbeddings(model_name=model_name)
 class ChatbotKwargs(TypedDict, total=False):
     user: str
     assistant: str
@@ -49,17 +46,6 @@ class Context(TypedDict):
     content: str
     saved: Optional[bool]
 
-def embedding_to_vector(input :str) -> list[float]:
-    inputs = tokenizer(input, return_tensors="pt", truncation=True, padding=True)
-    inputs.pop("token_type_ids")
-    outputs = embedding_model(**inputs) #type: ignore
-    tensor = outputs.last_hidden_state #type: ignore
-    embedding_vector : list[float] = tensor[0][0].tolist()
-    # embedding_vector += [0.0] * (1536 - len(embedding_vector))
-    # torch.mean(embeddings, dim=1).squeeze().tolist()
-    # print("embedding_vector:", embedding_vector)
-    return embedding_vector
-
 def request_to_llm(platform :str, modelName :str, context :list[Context], **kwargs : Unpack[LLMOptions]) -> str:
     model : BaseChatModel | None = None
     format_value = cast(Literal['', 'json'], kwargs.get("format", ''))
@@ -84,8 +70,7 @@ def request_to_llm(platform :str, modelName :str, context :list[Context], **kwar
     end_time = time.time()
     print("Elapsed time:", end_time - start_time)
     print("응답:", response)
-    response_metadata = getattr(response, "response_metadata", {})
-    usage_metadata = getattr(response_metadata, "usage_metadata", {})
+    usage_metadata = getattr(response, "usage_metadata", {})
     input_tokens = getattr(usage_metadata,"input_tokens", 0)
     output_tokens = getattr(usage_metadata,"output_tokens", 0)
     print("input_tokens:", input_tokens, " output_tokens:", output_tokens)
