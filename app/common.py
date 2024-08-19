@@ -32,6 +32,7 @@ def request_to_llm(platform :str, modelName :str, context :list[Context], **kwar
             top_p = kwargs.get("top_p", None),
             num_predict = kwargs.get("max_tokens", None),
             repeat_penalty = kwargs.get("frequency_penalty", None),
+            stop=kwargs.get("stop", None),
             format = format_value
         )
 
@@ -47,9 +48,10 @@ def request_to_llm(platform :str, modelName :str, context :list[Context], **kwar
     print("응답:", response)
     usage_metadata = getattr(response, "usage_metadata", {})
     print("usage_metadata:", usage_metadata)
-    input_tokens = getattr(usage_metadata,"input_tokens", 0)
-    output_tokens = getattr(usage_metadata,"output_tokens", 0)
-    print("input_tokens:", input_tokens, " output_tokens:", output_tokens)
+    if usage_metadata is not None:
+        input_tokens = usage_metadata.get("input_tokens", 0)
+        output_tokens = usage_metadata.get("output_tokens", 0)
+        print("input_tokens:", input_tokens, " output_tokens:", output_tokens)
     content = getattr(response, "content", "")
     return content
 

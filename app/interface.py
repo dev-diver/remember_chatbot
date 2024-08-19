@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional, Literal
+from typing import TypedDict, Optional, Literal, List
 
 class ChatbotKwargs(TypedDict, total=False):
     user: str
@@ -14,6 +14,7 @@ class LLMOptions(TypedDict, total=False):
     max_tokens: Optional[int]
     frequency_penalty: Optional[float]
     format: Optional[str]
+    stop: Optional[List[str]]
 
 class Context(TypedDict):
     role: Literal["user", "assistant", "system"]

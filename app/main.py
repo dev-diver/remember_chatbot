@@ -26,7 +26,9 @@ def chat_api():
 
 @application.route('/make-memory', methods=['POST'])
 def make_memory():
-    message = request.form.get("message", "")
+    data = request.get_json()
+    message = data.get("message", "")
+    print("inject memory:", message)
     summaries = chatbot.memoryManager.inject_memory(message)
     return {"message" : summaries}
 

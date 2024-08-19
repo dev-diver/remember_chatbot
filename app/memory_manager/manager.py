@@ -8,7 +8,7 @@ from pymongo.cursor import Cursor
 from common import today, request_to_llm
 from interface import Context, ChatbotKwargs, ollamaModelNames
 from memory_manager import mongo_chats_collection, mongo_memory_collection, pinecone_store
-from memory_manager.prompt import MEASURING_SIMILARITY_SYSTEM_ROLE, NEEDS_MEMORY_TEMPLATE, SUMMARIZING_TEMPLATE
+from memory_manager.prompt import MEASURING_SIMILARITY_SYSTEM_ROLE, NEEDS_MEMORY_TEMPLATE, SUMMARIZING_CHAT_TEMPLATE, SUMMARIZING_STORY_TEMPLATE
 
 class MemoryManager:
 
@@ -88,19 +88,35 @@ class MemoryManager:
         chats_results = self.restore_chat(date)
         if len(list(chats_results)) == 0:
             return
-        summaries = self.summarize(chats_results)
+        summaries = self.summarize_chat(chats_results)
         self.delete_by_date(date) 
         self.save_to_memory(summaries,date)
         print("기억 저장 완료", summaries)
 
     def inject_memory(self, message: str):
         date = today()
-        messages : list[Context] = [{"role":"user", "content":message, "saved": False}]
-        summaries = self.summarize(messages)
+        summaries = self.summarize_story(message)
         self.save_to_memory(summaries, date)
         return summaries
+    
+    def summarize_story(self, message : str) -> list[dict[str,str]]:
+        try:
+            context : list[Context] = [
+                {"role":"system", "content":SUMMARIZING_STORY_TEMPLATE, "saved": False},
+                {"role":"user", "content": message, "saved": False}
+            ]
+            response = request_to_llm(
+                "ollama", 
+                ollamaModelNames.basic, 
+                context, 
+                temperature=0,
+                format="json"
+            )
+            return [json.loads(response)]
+        except Exception:
+            return []
 
-    def summarize(self, messages : list[Context]) -> list[dict[str,str]]:
+    def summarize_chat(self, messages : list[Context]) -> list[dict[str,str]]:
         altered_messages = [
             {
                 f"{self.user if message['role'] == 'user' else self.assistant}": message['content']
@@ -108,7 +124,7 @@ class MemoryManager:
         ]
         try:
             context : list[Context] = [
-                {"role":"system", "content":SUMMARIZING_TEMPLATE, "saved": False},
+                {"role":"system", "content":SUMMARIZING_CHAT_TEMPLATE, "saved": False},
                 {"role":"user", "content": json.dumps(altered_messages, ensure_ascii=False), "saved": False}
             ]
             response = request_to_llm(
