@@ -1,9 +1,9 @@
 from common import models, request_to_llm, Context, ChatbotKwargs
-from warning_agent import WarningAgent
+# from temp.warning_agent import WarningAgent
 from memory_manager import MemoryManager
 # import threading
 
-from characters import system_role, instruction
+from service_prompt.characters import system_role, instruction
 from typing import Unpack
 
 import time
@@ -27,7 +27,7 @@ class Chatbot:
         self.memoryManager = MemoryManager(**kwargs)
         self.context.extend(self.memoryManager.restore_chat()) # 오늘 대화만 불러옴
 
-        self.warning_agent = self._create_warning_agent()
+        # self.warning_agent = self._create_warning_agent()
         
         self.current_prompt_tokens = 0
         self.current_response_tokens = 0
@@ -44,12 +44,12 @@ class Chatbot:
             self.memoryManager.build_memory() # 요약도 기록함
             time.sleep(60)  # 1시간마다 반복
 
-    def _create_warning_agent(self):
-        return WarningAgent(
-            model=self.modelName,
-            user=self.user,
-            assistant=self.assistant
-        )
+    # def _create_warning_agent(self):
+    #     return WarningAgent(
+    #         model=self.modelName,
+    #         user=self.user,
+    #         assistant=self.assistant
+    #     )
     
     def handle_token_limit(self): # tiktoken 패키지를 쓰면 더 좋음
         try:

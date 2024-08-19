@@ -1,6 +1,5 @@
 from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer, models
-from langchain_huggingface import HuggingFaceEmbeddings
 
 # model_name :str = "skt/kobert-base-v1"
 # model_name :str = "./local_kobert"

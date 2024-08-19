@@ -1,5 +1,5 @@
 from common import client, models
-from characters import system_role
+from service_prompt.characters import system_role
 from pprint import pprint
 import time
 

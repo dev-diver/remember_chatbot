@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request#, Response, url_for
-from characters import system_role, instruction
+from service_prompt.characters import system_role, instruction
 from chatbot import Chatbot
 from common import OllamaModels
 # from function_calling import FunctionCalling

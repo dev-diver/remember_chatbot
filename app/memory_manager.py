@@ -3,7 +3,7 @@ from pymongo.database import Database
 
 import os
 from common import today, ollamaModelNames, request_to_llm, ChatbotKwargs, embeddings
-from memory_prompt import MEASURING_SIMILARITY_SYSTEM_ROLE, NEEDS_MEMORY_TEMPLATE, SUMMARIZING_TEMPLATE
+from service_prompt.memory import MEASURING_SIMILARITY_SYSTEM_ROLE, NEEDS_MEMORY_TEMPLATE, SUMMARIZING_TEMPLATE
 from chatbot import Context
 
 from pinecone import Pinecone
@@ -41,10 +41,10 @@ class MemoryManager:
             k=1
         )
         # cos_threshold = 0.7
-        dist_threshold = 1
+        # dist_threshold = 1
         res, score = results[0]
         print("search_vector_db", res, score)
-        return res.page_content if score < dist_threshold else None
+        return res.page_content #if score < dist_threshold else None
     
     def filter(self, message :str, memory :str, threshhold :float=0.6):
         context :list[Context] = [

@@ -1,3 +1,4 @@
+import warnings
 import os
 from openai import OpenAI
 from langchain_ollama import ChatOllama
@@ -12,6 +13,8 @@ from typing import TypedDict, Optional, Literal, cast
 from typing_extensions import Unpack
 import time
 from langchain_huggingface import HuggingFaceEmbeddings
+
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 model_name :str = "bespin-global/klue-sroberta-base-continue-learning-by-mnr"
