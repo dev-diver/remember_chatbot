@@ -21,18 +21,20 @@ class MemoryManager:
 
     def needs_memory(self, message:str) -> bool:
         print("기억 검색이 필요한지 질의")
-        context : list[Context] = [{"role":"user", "content": NEEDS_MEMORY_TEMPLATE.format(message=message), "saved": False}]
+        context : list[Context] = [
+            {"role":"user", "content": NEEDS_MEMORY_TEMPLATE.format(message=message), "saved": False},
+        ]
         try:
             response = request_to_llm(
                 "ollama", 
-                ollamaModelNames.advanced, 
+                ollamaModelNames.basic, 
                 context, 
                 temperature=0,
                 format="json"
             )
             response = json.loads(response)
             print("기억 필요", response)
-            return response['needs_memory']
+            return response['result']
         except Exception as e:
             print("needs_memory exception", e)
             return False
@@ -64,7 +66,7 @@ class MemoryManager:
         try:
             response = request_to_llm(
                 "ollama", 
-                ollamaModelNames.advanced, 
+                ollamaModelNames.basic, 
                 context, 
                 temperature=0,
                 format="json"
@@ -111,7 +113,7 @@ class MemoryManager:
             ]
             response = request_to_llm(
                 "ollama", 
-                ollamaModelNames.advanced, 
+                ollamaModelNames.basic, 
                 context, 
                 temperature=0,
                 format="json"

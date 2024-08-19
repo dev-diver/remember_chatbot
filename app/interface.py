@@ -6,7 +6,7 @@ class ChatbotKwargs(TypedDict, total=False):
 
 class OllamaModels:
     basic: str = "EEVE:latest"
-    advanced: str = "EEVE:latest"
+    basic: str = "EEVE:latest"
 
 class LLMOptions(TypedDict, total=False):
     temperature: Optional[float]

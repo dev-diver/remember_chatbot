@@ -46,6 +46,7 @@ def request_to_llm(platform :str, modelName :str, context :list[Context], **kwar
     print("Elapsed time:", end_time - start_time)
     print("응답:", response)
     usage_metadata = getattr(response, "usage_metadata", {})
+    print("usage_metadata:", usage_metadata)
     input_tokens = getattr(usage_metadata,"input_tokens", 0)
     output_tokens = getattr(usage_metadata,"output_tokens", 0)
     print("input_tokens:", input_tokens, " output_tokens:", output_tokens)

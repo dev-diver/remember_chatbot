@@ -55,8 +55,8 @@ class Chatbot:
 
         has_memory = self.retrieve_memory()
         if not has_memory:
-            self.add_user_message("기억 안 난다고 말해" )
-        self.add_instruction(self.instruction)
+            self.add_ai_message("기억 안 나" )
+        self.add_instruction()
         
         return self._send_request()
     
@@ -70,6 +70,13 @@ class Chatbot:
             "saved": False
         })
 
+    def add_ai_message(self, message:str) -> None:
+        self.context.append({
+            "role": "assistant",
+            "content": message,
+            "saved": False
+        })
+
     def add_response(self, response: str) -> None:
         self.clean_instruction()
         self.context.append({
@@ -79,8 +86,8 @@ class Chatbot:
             }
         )
     
-    def add_instruction(self, message:str) -> None:
-        self.context[-1]['content'] += f"\ninstruction:\n{message}"
+    def add_instruction(self) -> None:
+        self.context[-1]['content'] += self.instruction
 
     def clean_instruction(self):
         for idx in reversed(range(len(self.context))):
