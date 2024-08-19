@@ -1,14 +1,11 @@
-from common import models, request_to_llm, Context, ChatbotKwargs
-# from temp.warning_agent import WarningAgent
-from memory_manager import MemoryManager
-# import threading
-
-from service_prompt.characters import system_role, instruction
 from typing import Unpack
 
 import time
 import math
 
+from common import request_to_llm
+from interface import ChatbotKwargs, Context
+from app.memory_manager.manager import MemoryManager
 class Chatbot:
 
     def __init__(self, modelName :str, system_role :str, instruction :str, **kwargs: Unpack[ChatbotKwargs]):
@@ -27,40 +24,10 @@ class Chatbot:
         self.memoryManager = MemoryManager(**kwargs)
         self.context.extend(self.memoryManager.restore_chat()) # 오늘 대화만 불러옴
 
-        # self.warning_agent = self._create_warning_agent()
-        
         self.current_prompt_tokens = 0
         self.current_response_tokens = 0
         self.total_prompt_tokens = 0
         self.total_response_tokens = 0
-
-        # bg_thread = threading.Thread(target=self.background_task) # 락 등은 구현 안 함
-        # bg_thread.daemon = True
-        # bg_thread.start()
-    
-    def background_task(self):
-        while True:
-            self.save_chat() # 대화 내용도 기록하고
-            self.memoryManager.build_memory() # 요약도 기록함
-            time.sleep(60)  # 1시간마다 반복
-
-    # def _create_warning_agent(self):
-    #     return WarningAgent(
-    #         model=self.modelName,
-    #         user=self.user,
-    #         assistant=self.assistant
-    #     )
-    
-    def handle_token_limit(self): # tiktoken 패키지를 쓰면 더 좋음
-        try:
-            current_total_tokens = self.current_prompt_tokens + self.current_response_tokens
-            current_usage_rate = current_total_tokens / self.max_token_size
-            exceeded_token_rate = current_usage_rate - self.available_token_rate
-            if exceeded_token_rate > 0:
-                remove_size = math.ceil(len(self.context) / 10)
-                self.context = [self.context[0]] + self.context[remove_size+1:]
-        except Exception as e:
-            print(f"handle_token_limit exception:{e}")
 
     def _send_request(self) -> str:
         start_time = time.time()
@@ -86,17 +53,15 @@ class Chatbot:
     
     def send_request(self) -> str:
 
-        # if self.warning_agent.monitor_user(self.context):
-        #     content = self.warning_agent.warn_user()
-        #     return content
         has_memory = self.retrieve_memory()
         if not has_memory:
             self.add_user_message("기억 안 난다고 말해" )
-            # self.context[-1]['content'] = "기억 안 난다고 말해" 
-        self.context[-1]['content'] += self.instruction
+        self.add_instruction(self.instruction)
         
-
         return self._send_request()
+    
+    def get_response_content(self):
+        return self.context[-1]['content']
 
     def add_user_message(self, message:str) -> None:
         self.context.append({
@@ -113,6 +78,15 @@ class Chatbot:
             "saved": False
             }
         )
+    
+    def add_instruction(self, message:str) -> None:
+        self.context[-1]['content'] += f"\ninstruction:\n{message}"
+
+    def clean_instruction(self):
+        for idx in reversed(range(len(self.context))):
+            if self.context[idx]["role"] == "user":
+                self.context[idx]["content"] = self.context[idx]["content"].split("instruction:\n")[0].strip()
+                break
 
     def save_chat(self):
         self.memoryManager.save_chat(self.context)
@@ -130,34 +104,17 @@ class Chatbot:
             return True
         else:
             return False
-        
-    def get_response_content(self):
-        return self.context[-1]['content']
     
-    def clean_instruction(self):
-        for idx in reversed(range(len(self.context))):
-            if self.context[idx]["role"] == "user":
-                self.context[idx]["content"] = self.context[idx]["content"].split("instruction:\n")[0].strip()
-                break
-        
-if __name__ == "__main__":
-    chatbot = Chatbot(models.basic, system_role, instruction, user="민지", assistant="고비")
-
-    user_input = "Who won the world series in 2020?"
-    chatbot.add_user_message(user_input)
-
-    response = chatbot.send_request()
-
-    chatbot.add_response(response)
-
-    print(chatbot.get_response_content())
-
-    user_input = "Where was it played?"
-    chatbot.add_user_message(user_input)
-
-    response = chatbot.send_request()
-
-    chatbot.add_response(response)
-
-    print(chatbot.get_response_content())
+    def handle_token_limit(self): # tiktoken 패키지를 쓰면 더 좋음
+        try:
+            current_total_tokens = self.current_prompt_tokens + self.current_response_tokens
+            current_usage_rate = current_total_tokens / self.max_token_size
+            exceeded_token_rate = current_usage_rate - self.available_token_rate
+            if exceeded_token_rate > 0:
+                remove_size = math.ceil(len(self.context) / 10)
+                self.context = [self.context[0]] + self.context[remove_size+1:]
+        except Exception as e:
+            print(f"handle_token_limit exception:{e}")
+    
+    
 
