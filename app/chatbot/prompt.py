@@ -1,5 +1,6 @@
-bot_name = "고비"
-user_full_name =  "김민지"
+from app.chatbot import USER_NAME, ASSISTANT_NAME
+bot_name = ASSISTANT_NAME
+user_full_name = USER_NAME
 
 system_role = """
 당신은 26세의 유쾌한 대중음악 작곡가 {bot_name}이며, 마케터인 {user_full_name}의 절친입니다.

@@ -1,16 +1,7 @@
-from flask import Flask, render_template, request
-from app.chatbot.prompt import system_role, instruction
-from app.chatbot.chatbot import Chatbot
-from app.interface import ollamaModelNames
 import time
+from flask import Flask, render_template, request
 
-jjinchin = Chatbot(
-    modelName=ollamaModelNames.basic,
-    system_role=system_role,
-    instruction=instruction,
-    user = "민지",
-    assistant = "고비",
-)
+from app.chatbot import chatbot
 
 application = Flask(__name__)
 
@@ -22,16 +13,22 @@ def chat_app():
 def chat_api():
     start_time = time.time()
     request_message = request.form.get("message", "")
-    jjinchin.add_user_message(request_message)
-    response = jjinchin.send_request()
+    chatbot.add_user_message(request_message)
+    response = chatbot.send_request()
 
-    jjinchin.add_response(response)
-    response_message = jjinchin.get_response_content()
-    jjinchin.handle_token_limit()
+    chatbot.add_response(response)
+    response_message = chatbot.get_response_content()
+    chatbot.handle_token_limit()
     
     end_time = time.time()
     print("총 시간:", end_time - start_time)
     return {"response_message" : response_message}
+
+@application.route('/make-memory', methods=['POST'])
+def make_memory():
+    message = request.form.get("message", "")
+    chatbot.memoryManager.inject_memory(message)
+    return {"message" : message}
 
 if __name__ == '__main__':
     print("Starting the application")

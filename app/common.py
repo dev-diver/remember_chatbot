@@ -33,7 +33,6 @@ def request_to_llm(platform :str, modelName :str, context :list[Context], **kwar
             num_predict = kwargs.get("max_tokens", None),
             repeat_penalty = kwargs.get("frequency_penalty", None),
             format = format_value
-            #Presence penalty 없음
         )
 
     if model is None:

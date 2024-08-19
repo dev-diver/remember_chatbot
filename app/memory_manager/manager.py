@@ -90,7 +90,13 @@ class MemoryManager:
         self.delete_by_date(date) 
         self.save_to_memory(summaries,date)
         print("기억 저장 완료", summaries)
-    
+
+    def inject_memory(self, message: str):
+        date = today()
+        messages : list[Context] = [{"role":"user", "content":message, "saved": False}]
+        summaries = self.summarize(messages)
+        self.save_to_memory(summaries, date)
+
     def summarize(self, messages : list[Context]) -> list[dict[str,str]]:
         altered_messages = [
             {
