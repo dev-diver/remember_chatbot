@@ -7,8 +7,8 @@ from pymongo.cursor import Cursor
 
 from common import today, request_to_llm
 from interface import Context, ChatbotKwargs, ollamaModelNames
-from app.memory_manager import mongo_chats_collection, mongo_memory_collection, pinecone_store
-from app.memory_manager.prompt import MEASURING_SIMILARITY_SYSTEM_ROLE, NEEDS_MEMORY_TEMPLATE, SUMMARIZING_TEMPLATE
+from memory_manager import mongo_chats_collection, mongo_memory_collection, pinecone_store
+from memory_manager.prompt import MEASURING_SIMILARITY_SYSTEM_ROLE, NEEDS_MEMORY_TEMPLATE, SUMMARIZING_TEMPLATE
 
 class MemoryManager:
 
@@ -96,6 +96,7 @@ class MemoryManager:
         messages : list[Context] = [{"role":"user", "content":message, "saved": False}]
         summaries = self.summarize(messages)
         self.save_to_memory(summaries, date)
+        return summaries
 
     def summarize(self, messages : list[Context]) -> list[dict[str,str]]:
         altered_messages = [

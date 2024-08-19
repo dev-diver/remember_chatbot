@@ -1,4 +1,4 @@
-from app.chatbot import USER_NAME, ASSISTANT_NAME
+from chatbot.config import ASSISTANT_NAME, USER_NAME
 bot_name = ASSISTANT_NAME
 user_full_name = USER_NAME
 

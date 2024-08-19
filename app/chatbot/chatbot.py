@@ -5,7 +5,7 @@ import math
 
 from common import request_to_llm
 from interface import ChatbotKwargs, Context
-from app.memory_manager.manager import MemoryManager
+from memory_manager.manager import MemoryManager
 class Chatbot:
 
     def __init__(self, modelName :str, system_role :str, instruction :str, **kwargs: Unpack[ChatbotKwargs]):

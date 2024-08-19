@@ -5,7 +5,7 @@ import os
 import time
 import warnings
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+import pytz
 
 from langchain_core.messages.base import BaseMessage
 from langchain_core.language_models import BaseChatModel
@@ -64,19 +64,19 @@ def context_to_messages(context: list[Context]) -> list[BaseMessage]:
     return invokeMessages
 
 def today() -> str:
-    korea = ZoneInfo('Asia/Seoul')
+    korea = pytz.timezone('Asia/Seoul')
     now = datetime.now(korea)
     return(now.strftime("%Y%m%d"))
 
 def yesterday() -> str:
-    korea = ZoneInfo('Asia/Seoul')
+    korea = pytz.timezone('Asia/Seoul')
     now = datetime.now(korea)
     one_day = timedelta(days=1)
     yesterday = now - one_day
     return(yesterday.strftime("%Y%m%d"))
 
 def currTime() -> str:
-    korea = ZoneInfo('Asia/Seoul')
+    korea = pytz.timezone('Asia/Seoul')
     now = datetime.now(korea)
     formatted_now = now.strftime("%Y.%m.%d %H:%M:%S")
     return(formatted_now)

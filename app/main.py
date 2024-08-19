@@ -1,7 +1,7 @@
 import time
 from flask import Flask, render_template, request
 
-from app.chatbot import chatbot
+from chatbot import chatbot
 
 application = Flask(__name__)
 
@@ -27,8 +27,8 @@ def chat_api():
 @application.route('/make-memory', methods=['POST'])
 def make_memory():
     message = request.form.get("message", "")
-    chatbot.memoryManager.inject_memory(message)
-    return {"message" : message}
+    summaries = chatbot.memoryManager.inject_memory(message)
+    return {"message" : summaries}
 
 if __name__ == '__main__':
     print("Starting the application")

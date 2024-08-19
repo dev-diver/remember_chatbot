@@ -1,0 +1,2 @@
+USER_NAME = "소경현" 
+ASSISTANT_NAME = "웰리"

@@ -1,9 +1,7 @@
-from app.chatbot.prompt import system_role, instruction
-from app.chatbot.chatbot import Chatbot
-from app.interface import ollamaModelNames
-
-USER_NAME = "소경현" 
-ASSISTANT_NAME = "웰리"
+from chatbot.prompt import system_role, instruction
+from chatbot.chatbot import Chatbot
+from interface import ollamaModelNames
+from chatbot.config import ASSISTANT_NAME, USER_NAME
 
 chatbot = Chatbot(
     modelName=ollamaModelNames.basic,
