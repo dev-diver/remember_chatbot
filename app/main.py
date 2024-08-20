@@ -26,12 +26,11 @@ def chat_api():
 
 @application.route('/make-memory', methods=['POST'])
 def make_memory():
-    data = request.get_json()
-    message = data.get("message", "")
+    message = request.form.get("message", "")
     print("inject memory:", message)
-    summaries = chatbot.memoryManager.inject_memory(message)
-    return {"message" : summaries}
+    # summaries = chatbot.memoryManager.inject_memory(message)
+    return {"response_message" : message}
 
 if __name__ == '__main__':
     print("Starting the application")
-    application.run(host='0.0.0.0', port=3000)
+    application.run(debug=True, host='0.0.0.0', port=3000)

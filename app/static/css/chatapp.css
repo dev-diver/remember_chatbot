@@ -129,8 +129,10 @@ html,body {
 }
 
 .chat .chat-message {
-    padding: 5px 15px 0px 15px;
+    padding: 5px 15px 5px 15px;
     background-color:#EFEFEF;
+    display: flex;
+    align-items: center;
 }
 
 .chat .chat-message textarea {
@@ -141,11 +143,26 @@ html,body {
     border-radius: 15px;
     resize: none;
     margin-bottom: 20px;
+    box-sizing: border-box;
+    margin: 0;
 }
 
 .chat .chat-message textarea:focus {
     outline: none;
     border: 2px solid #DAA520; /* 짙은 황금색 */
+}
+
+.chat .chat-message button {
+    float: right;
+    background: #DAA520; /* 짙은 황금색 */
+    border: none;
+    padding: 10px 15px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 15px;
+    display: flex;
+    margin:10px;
 }
 
 .align-right {

@@ -7,13 +7,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preload stylesheet" as="style" href='https://fonts.googleapis.com/css2?family=Gothic+A1:wght@200&family=Nanum+Gothic&family=Nanum+Myeongjo&family=Noto+Sans+KR:wght@400&family=Roboto:wght@100&display=swap'>    
-    <title>민지의 chatbot</title>
+    <title>chatbot</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chatapp.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.min.js"></script>
 </head>
 
 <body>
-    <div class="container clearfix">
+    <div class="container clearfix" id="chat-container">
         <div class="chat">
             <div class="chat-header clearfix">
                 <img style="width:60px; border-radius:50px; margin-left:10px;" src="{{ url_for('static', filename='images/logo.png') }}" alt="avatar" />
@@ -36,6 +36,21 @@
             </div> <!-- end chat-message -->
         </div> <!-- end chat -->
     </div> <!-- end container -->
+
+    <div class="container clearfix" id="memory-container">
+        <div class ="chat">
+            <div class="chat-message">
+                <span class=info></span>
+                <textarea name="message-to-send" id="memory-to-send" placeholder="요약할 기억을 입력하세요." rows="1"></textarea> 
+                <button id="memory-send">Send</button>
+            </div>
+            <div class="chat-history"> 
+                <ul style="list-style:none;">
+                </ul>
+            </div> <!-- end chat-history -->
+        </div>
+    </div>
+
     <audio id="audioPlayer" controls style="display:none"></audio>
     
     <script id="message-template" type="text/x-handlebars-template">
@@ -82,6 +97,37 @@
         </li>      
         {% endraw %}
     </script>
+
+    <script id="memory-template" type="text/x-handlebars-template">
+        {% raw %}
+        <li class="clearfix">
+            <div class="message-data align-right">                
+                <span class="message-data-name" >기억 저장 요청</span>          
+            </div>
+            <div class="message my-message float-right">
+                {{messageOutput}}
+            </div>
+        </li>
+        {% endraw %}
+    </script>
+
+    <script id="memory-response-template" type="text/x-handlebars-template">
+        {% raw %}
+        <li class="clearfix">
+            <div class="message-data">
+                <span class="message-data-name">저장된 기억</span>
+            </div>
+            <div class="message other-message float-left">
+                {{#if loading}}
+                    <div class="loading-dots"><span></span><span></span><span></span></div>
+                {{else}}
+                    {{{messageOutput}}}
+                {{/if}}                
+            </div>
+        </li>      
+        {% endraw %}
+    </script>
+
     <script>
         document.addEventListener('keydown', function(event) {
             console.log('Key:', event.key, 'KeyCode:', event.keyCode);
@@ -90,6 +136,20 @@
         (function () {
             async function fetchResponse(message) {
                 const response = await fetch("/chat-api", {
+                    method: "POST",
+                    body: message
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data
+            }
+
+            async function fetchMemory(message){
+                const response = await fetch("/make-memory", {
                     method: "POST",
                     body: message
                 });
@@ -152,14 +212,23 @@
                 },
                 // Cache DOM elements
                 cacheDOM: function () {
-                    this.chatHistory = document.querySelector('.chat-history');
+                    this.chatHistory = document.querySelector('#chat-container .chat-history');
+                    this.chatHistoryList = this.chatHistory.querySelector('ul');
                     this.button = document.querySelector('#send');
                     this.textarea = document.getElementById('message-to-send');
-                    this.chatHistoryList = this.chatHistory.querySelector('ul');
+                    
+                    this.memoryHistory = document.querySelector('#memory-container .chat-history');
+                    this.memoryHistoryList = this.memoryHistory.querySelector('ul');
+                    this.memoryButton = document.querySelector('#memory-send');
+                    this.memoryTextarea = document.getElementById('memory-to-send');
+                    
                 },
                 // Bind events to elements
                 bindEvents: function () {
                     this.button.addEventListener('click', this.addMessage.bind(this));
+
+                    this.memoryButton.addEventListener('click', this.addMemory.bind(this));
+
                     this.textarea.addEventListener('keyup', this.addMessageEnter.bind(this));
                     document.getElementById('image-upload').addEventListener('change', this.previewImage.bind(this));
                 },
@@ -186,6 +255,43 @@
                         this.textarea.value = '';
                     }
                 },
+
+                render2: function (message, imageUrl, pythonCode, isUser) {
+                    //this.scrollToBottom();
+
+                    const templateId = isUser ? "#memory-template" : "#memory-response-template";
+                    const template = Handlebars.compile(document.querySelector(templateId).innerHTML);
+
+                    const context = {
+                        messageOutput: message,
+                    };
+
+                    let htmlString = template(context)
+                    
+                    this.memoryHistoryList.insertAdjacentHTML('beforeend', htmlString);
+                    this.scrollToBottom();
+
+                    if (isUser) {
+                        this.textarea.value = '';
+                    }
+                },
+
+                showMemory: function(message){
+                    console.log("요약 메세지:", message); 
+                    this.scrollToBottom();
+                    const templateId = "#memory-response-template";
+                    let templateSource = document.querySelector(templateId).innerHTML;
+                    const template = Handlebars.compile(templateSource);
+                    const context = {
+                        messageOutput: message,
+                        time: this.getCurrentTime()
+                    };
+                    let htmlString = template(context);
+    
+                    document.querySelector('#memory-container .chat-history > ul > li:last-child').innerHTML = htmlString
+                    this.scrollToBottom();
+                },
+
                 showResponse:  function (message) {
                     this.scrollToBottom();
                     const templateId = "#message-response-template";
@@ -221,6 +327,23 @@
                             // 물방울 애니메이션을 시작합니다.
                             var loadingHtml = template(context);
                             this.chatHistoryList.insertAdjacentHTML('beforeend', loadingHtml);
+                            this.scrollToBottom();
+                            resolve();
+                        }, delay);
+                    });
+                },
+                showMemoryBubbleAfterSeconds: async function (delay) {
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            const templateId = "#memory-response-template";
+                            const template = Handlebars.compile(document.querySelector(templateId).innerHTML);
+                            const context = {
+                                loading: true,
+                                time: this.getCurrentTime()
+                            };
+                            // 물방울 애니메이션을 시작합니다.
+                            var loadingHtml = template(context);
+                            this.memoryHistoryList.insertAdjacentHTML('beforeend', loadingHtml);
                             this.scrollToBottom();
                             resolve();
                         }, delay);
@@ -271,6 +394,27 @@
                     }
                     document.getElementById('image-upload').value = ''; // 이미지 필드 초기화
                 },
+
+                addMemory : async function (){
+                    const formData = new FormData();
+                    this.memoryToSend = this.memoryTextarea.value.trim();
+                    console.log("메세지:", this.memoryToSend);
+                    formData.append('message', this.memoryToSend); // 메시지 추가
+
+                    this.render2(this.memoryToSend, null, null, true);
+                    showBubblePromise = this.showMemoryBubbleAfterSeconds(500)
+                    waitPromise = this.waitSeconds(3500)
+
+                    const response = await fetchMemory(formData);
+                    await showBubblePromise //답변이 출력되고 버블링이 발생되는 현상 제어
+                    await waitPromise  //최소 2초는 버블링
+
+                    if (response.response_message) {
+                        this.showMemory(response.response_message); // 텍스트 메시지 처리
+                    }
+                    
+                },
+
                 // Add a message when the Enter key is pressed
                 addMessageEnter: function (event) {
                     if (event.keyCode === 13) {
