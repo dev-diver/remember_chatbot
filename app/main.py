@@ -28,9 +28,13 @@ def chat_api():
 def make_memory():
     message = request.form.get("message", "")
     print("inject memory:", message)
-    # summaries = chatbot.memoryManager.inject_memory(message)
-    return {"response_message" : message}
+    try:
+        summaries = chatbot.memoryManager.inject_memory(message)
+        summary = summaries[0]['요약']
+    except:
+        summary = "요약을 할 수 없습니다."
+    return {"response_message" : summary}
 
 if __name__ == '__main__':
     print("Starting the application")
-    application.run(debug=True, host='0.0.0.0', port=3000)
+    application.run(host='0.0.0.0', port=3000)

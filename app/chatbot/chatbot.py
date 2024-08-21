@@ -126,8 +126,12 @@ class Chatbot:
             return True
         memory = self.memoryManager.retrieve_memory(user_message)
         if memory is not None:
-            whisper = (f"[귓속말]\n{self.assistant}야! 기억 속의 대화 내용이야. 앞으로 이 내용을 참조하면서 답해줘."
-            f"얼마 전에 나누었던 대화라는 점을 자연스럽게 말해줘:\n{memory}")
+            whisper = (f"""
+                       [instruction]
+                       불러온 기억의 주요 키워드를 포함해 대화를 이어가세요.
+                       ```불러온 기억:
+                       {memory}
+                       """)
             self.add_user_message(whisper)
             return True
         else:

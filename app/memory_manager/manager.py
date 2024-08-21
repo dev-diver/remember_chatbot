@@ -54,6 +54,8 @@ class MemoryManager:
             message,
             k=1
         )
+        if len(results) == 0:
+            return None
         res, score = results[0]
         print("search_vector_db", res, score)
         return res.page_content
@@ -95,7 +97,10 @@ class MemoryManager:
 
     def inject_memory(self, message: str):
         date = today()
-        summaries = self.summarize_story(message)
+        # summaries = self.summarize_story(message)
+        summaries = [
+            {"주제": '없음', "요약": message}
+        ]
         self.save_to_memory(summaries, date)
         return summaries
     
