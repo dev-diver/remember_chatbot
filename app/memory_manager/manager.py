@@ -1,4 +1,4 @@
-from typing import Any, List,Unpack
+from typing import Any, Unpack
 import json
 
 from langchain_core.documents import Document
@@ -163,7 +163,7 @@ class MemoryManager:
     
     def delete_by_date(self, date :str):
         search_results = self.memory_collection.find({"date":date})
-        ids : List[str] = [ str(v['_id']) for v in search_results]
+        ids : list[str] = [ str(v['_id']) for v in search_results]
         if len(ids) == 0:
             return
         self.vector_store.delete(ids=ids) #type: ignore

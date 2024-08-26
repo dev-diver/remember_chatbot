@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict
+from typing import Any
 
 from pymongo import MongoClient
 from pymongo.database import Database
@@ -12,7 +12,7 @@ PINECONE_INDEX = "chatbot-eu"
 MONGODB_COLLECTION = "memory"
 
 print("connection mongodb..")
-cluster : MongoClient[Dict[str,Any]] = MongoClient("mongodb://localhost:27017/")
+cluster : MongoClient[dict[str,Any]] = MongoClient("mongodb://localhost:27017/")
 db :Database[Any] = cluster["chatbot"]
 mongo_chats_collection = db["chats"]
 mongo_memory_collection = db[MONGODB_COLLECTION]

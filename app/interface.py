@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional, Literal, List
+from typing import TypedDict, Literal
 
 class ChatbotKwargs(TypedDict, total=False):
     user: str
@@ -6,19 +6,19 @@ class ChatbotKwargs(TypedDict, total=False):
 
 class OllamaModels:
     basic: str = "EEVE:latest"
-    basic: str = "EEVE:latest"
+    advanced: str = "EEVE:latest"
 
 class LLMOptions(TypedDict, total=False):
-    temperature: Optional[float]
-    top_p: Optional[float]
-    max_tokens: Optional[int]
-    frequency_penalty: Optional[float]
-    format: Optional[str]
-    stop: Optional[List[str]]
+    temperature: float | None
+    top_p: float | None
+    max_tokens: int | None
+    frequency_penalty: float | None
+    format: str | None
+    stop: list[str] | None
 
 class Context(TypedDict):
     role: Literal["user", "assistant", "system"]
     content: str
-    saved: Optional[bool]
+    saved: bool | None
 
 ollamaModelNames = OllamaModels()
