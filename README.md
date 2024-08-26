@@ -1,4 +1,4 @@
-# 카카오 챗봇 만들기
+# 기억 챗봇 만들기
 
 [시연 자료_google slide](https://docs.google.com/presentation/d/1Xgu3ytEaByc1C_hbBj7ccZ5kETswbcycqMETppsvkNE/edit?usp=sharing)
 
@@ -51,8 +51,10 @@ ollama create EEVE -f Modelfile
 2. 기억 물어보기
 3. 관련 기억 생성후 기억 물어보기
 
-<img src="./readme_image/test.png" width="400">
-<img src="./readme_image/test2.png" width="400">
+<p align="center">
+    <img src="./readme_image/test.png" width="400">
+    <img src="./readme_image/test2.png" width="400">
+</p>
 
 * 예시에서 사용한 기억
 ```
